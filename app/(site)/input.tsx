@@ -29,7 +29,7 @@ export const CurrencyInput = ({
         }
       >
         {Object.keys(currencies).map((key) => (
-          <option value={key} label={`(${key}) ${currencies[key]}`} />
+          <option key={key} value={key} label={`(${key}) ${currencies[key]}`} />
         ))}
       </select>
       <input

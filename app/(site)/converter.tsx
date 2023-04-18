@@ -38,31 +38,22 @@ export const ConverterComponent = ({ currencies }: ConverterProps) => {
     type: CurrencyInputType
   ) => {
     if (type === "origin") {
-      if (currency.currency === conversion.target.currency) {
-        const newTargetCurrency = Object.keys(currencies).filter(
-          (key) => key !== currency.currency
-        )[0];
-        const res = await getConversionData(currency, {
+      const isTargetEqualToOrigin =
+        currency.currency === conversion.target.currency;
+      const newTargetCurrency = isTargetEqualToOrigin
+        ? Object.keys(currencies).filter((key) => key !== currency.currency)[0]
+        : conversion.target.currency;
+      const res = await getConversionData(currency, {
+        currency: newTargetCurrency,
+        value: conversion.target.value,
+      });
+      setConversion((prev) => ({
+        target: {
           currency: newTargetCurrency,
-          value: 0,
-        });
-        setConversion((prev) => ({
-          target: {
-            currency: newTargetCurrency,
-            value: res.rates[newTargetCurrency],
-          },
-          [type]: currency,
-        }));
-      } else {
-        const res = await getConversionData(currency, conversion.target);
-        setConversion((prev) => ({
-          target: {
-            ...prev.target,
-            value: res.rates[prev.target.currency],
-          },
-          [type]: currency,
-        }));
-      }
+          value: res.rates[newTargetCurrency],
+        },
+        [type]: currency,
+      }));
     } else {
       const res = await getConversionData(currency, conversion.origin);
       setConversion((prev) => ({

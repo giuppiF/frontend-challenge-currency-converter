@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CurrencyInput } from "./input";
 import { Currencies } from "./page";
 
@@ -27,42 +27,48 @@ export const ConverterComponent = ({ currencies }: ConverterProps) => {
     },
     target: {
       currency: "USD",
-      value: 1.18,
+      value: 0,
     },
   };
 
   const [conversion, setConversion] = useState<CurrentConversion>(defaultData);
 
+  useEffect(() => {
+    updateConversion(conversion.origin, "origin");
+  }, []);
+
   const updateConversion = async (
-    currency: Currency,
-    type: CurrencyInputType
+    updatedCurrency: Currency,
+    updatedType: CurrencyInputType
   ) => {
-    if (type === "origin") {
-      const isTargetEqualToOrigin =
-        currency.currency === conversion.target.currency;
-      const newTargetCurrency = isTargetEqualToOrigin
-        ? Object.keys(currencies).filter((key) => key !== currency.currency)[0]
-        : conversion.target.currency;
-      const res = await getConversionData(currency, {
-        currency: newTargetCurrency,
-        value: conversion.target.value,
-      });
-      setConversion((prev) => ({
-        target: {
-          currency: newTargetCurrency,
-          value: res.rates[newTargetCurrency],
-        },
-        [type]: currency,
-      }));
+    if (updatedType === "origin") {
+      const targetCurrency = getValidTargetCurrency(
+        updatedCurrency,
+        conversion,
+        currencies
+      );
+
+      const data = await getConversionData(updatedCurrency, targetCurrency);
+      if (data) {
+        setConversion({
+          target: {
+            currency: targetCurrency.currency,
+            value: data.rates[targetCurrency.currency],
+          },
+          origin: updatedCurrency,
+        });
+      }
     } else {
-      const res = await getConversionData(currency, conversion.origin);
-      setConversion((prev) => ({
-        origin: {
-          ...prev.origin,
-          value: res.rates[prev.origin.currency],
-        },
-        [type]: currency,
-      }));
+      const data = await getConversionData(updatedCurrency, conversion.origin);
+      if (data) {
+        setConversion((prev) => ({
+          origin: {
+            ...prev.origin,
+            value: data.rates[prev.origin.currency],
+          },
+          target: updatedCurrency,
+        }));
+      }
     }
   };
 
@@ -93,11 +99,39 @@ export const ConverterComponent = ({ currencies }: ConverterProps) => {
   );
 };
 
-async function getConversionData(origin: Currency, target: Currency) {
-  const host = "api.frankfurter.app";
-  const res = await fetch(
-    `https://${host}/latest?amount=${origin.value}&from=${origin.currency}&to=${target.currency}`
-  );
-  const data = await res.json();
-  return data;
+async function getConversionData(
+  updatedCurrency: Currency,
+  conversionTarget: Currency
+) {
+  try {
+    const host = "api.frankfurter.app";
+    const res = await fetch(
+      `https://${host}/latest?amount=${updatedCurrency.value}&from=${updatedCurrency.currency}&to=${conversionTarget.currency}`
+    );
+    if (!res.ok) {
+      throw new Error("Something went wrong");
+    }
+    const data = await res.json();
+    return data;
+  } catch {
+    throw new Error("Something went wrong");
+  }
+}
+
+function getValidTargetCurrency(
+  updatedOrigin: Currency,
+  conversionData: CurrentConversion,
+  currencies: Currencies
+) {
+  const isTargetEqualToUpdatedOrigin =
+    updatedOrigin.currency === conversionData.target.currency;
+
+  const newTargetCurrency = isTargetEqualToUpdatedOrigin
+    ? Object.keys(currencies).filter((key) => key !== updatedOrigin.currency)[0]
+    : conversionData.target.currency;
+
+  return {
+    currency: newTargetCurrency,
+    value: 0,
+  };
 }

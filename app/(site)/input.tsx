@@ -5,7 +5,7 @@ interface InputProps {
   currencies: Currencies;
   currentCurrency: Currency;
   type: CurrencyInputType;
-  onChange: (currency: Currency, type: CurrencyInputType) => void;
+  onChange: (updatedCurrency: Currency, type: CurrencyInputType) => void;
 }
 
 export const CurrencyInput = ({

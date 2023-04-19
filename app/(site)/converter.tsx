@@ -33,6 +33,7 @@ export const ConverterComponent = ({ currencies }: ConverterProps) => {
 
   const [conversion, setConversion] = useState<CurrentConversion>(defaultData);
 
+  // conversion on first render
   useEffect(() => {
     updateConversion(conversion.origin, "origin");
   }, []);
@@ -118,6 +119,8 @@ async function getConversionData(
   }
 }
 
+// check if the target is the same currency of the origin
+// if true, change target to first valid currency
 function getValidTargetCurrency(
   updatedOrigin: Currency,
   conversionData: CurrentConversion,
